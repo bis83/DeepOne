@@ -1,0 +1,2 @@
+
+(compile -O3 -o DeepOne DeepOne.scm)
