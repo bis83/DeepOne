@@ -111,18 +111,37 @@
   (pict-read-from 8)
   (plot-mode-stamp)
   (plot-quads 7 1)
+  (draw-number 10 8 260 8 1 1)
   ;; level
   (pict-read-from 7)
   (plot-mode-stamp)
   (plot-quads 8 1)
+  (draw-number 18 2 20 120 1.5 1)
   ;; timerF
   (pict-read-from 9)
   (plot-mode-stamp)
   (plot-quads 9 1)
+  (draw-number 20 3 80 440 1 1)
   ;; gameover
   (draw-gameover)
   ;; complete
   (draw-complete))
+
+(define (draw-number start digits x y s num)
+  (let loop ((i 0)
+             (n num))
+    (when (< i digits)
+      (define u (expt 10 (- digits i 1)))
+      (define k (inexact->exact (floor (/ n u))))
+      (plot-data (+ start i)
+        (f32vector  (* k 24)        0 (+ x (* s i 24))       y
+                    (* k 24)       24 (+ x (* s i 24))       (+ y (* s 24))
+                    (* (+ k 1) 24) 24 (+ x (* s (+ i 1) 24)) (+ y (* s 24))
+                    (* (+ k 1) 24)  0 (+ x (* s (+ i 1) 24)) y))
+      (loop (+ i 1) (modulo n u))))
+  (pict-read-from 6)
+  (plot-mode-stamp)
+  (plot-quads start digits))
 
 (define (draw-gates)
   (values))
@@ -162,6 +181,10 @@
       (update-player)
       (update-photons)
       (update-gates)
+      (hit-player-and-photon)
+      (hit-player-and-gate)
+      (limit-score)
+      (increase-level))))
 
 (define (update-bgm)
   (values))
