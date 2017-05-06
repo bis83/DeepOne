@@ -121,7 +121,7 @@
   (pict-read-from 9)
   (plot-mode-stamp)
   (plot-quads 9 1)
-  (draw-number 20 3 80 440 1 timer)
+  (draw-number 20 3 80 440 1 (inexact->exact (floor (/ timer 60))))
   ;; gameover
   (draw-gameover)
   ;; complete
@@ -147,7 +147,18 @@
   (values))
 
 (define (draw-player)
-  (values))
+  (plot-data 32
+    (f32vector (* player-color 64)          0 player-pos-x         player-pos-y
+               (* player-color 64)         64 player-pos-x         (+ player-pos-y 64)
+               (* (+ player-color 1) 64)   64 (+ player-pos-x 64)  (+ player-pos-y 64)
+               (* (+ player-color 1) 64)    0 (+ player-pos-x 64)  player-pos-y
+               (* cristal-color 64)        64 cristal-pos-x        cristal-pos-y
+               (* cristal-color 64)       128 cristal-pos-x        (+ cristal-pos-y 64)
+               (* (+ cristal-color 1) 64) 128 (+ cristal-pos-x 64) (+ cristal-pos-y 64)
+               (* (+ cristal-color 1) 64)  64 (+ cristal-pos-x 64) cristal-pos-y))
+  (pict-read-from 14)
+  (plot-mode-stamp)
+  (plot-quads 32 2))
 
 (define (draw-photons)
   (values))
@@ -174,12 +185,40 @@
 (define complete? #f)
 
 (define score 0)
-(define level 0)
-(define timer 0)
+(define level 1)
+(define timer (* 60 20))
+(define level-timer 0)
+
+(define player-pos-x (- 320 32))
+(define player-pos-y (- 360 32))
+(define player-color 0)
+(define cristal-pos-x (- 320 32))
+(define cristal-pos-y (- 360 96))
+(define cristal-vel-x 0)
+(define cristal-vel-y 0)
+(define cristal-color 1)
 
 (define (update-title-scene)
   (receive (btn0 btn1 btn2 btn3 x y) (gpad-joystick-status)
-    (when btn0 (set! scene-name 'main))))
+    (when btn0
+      (start-main)
+      (set! scene-name 'main))))
+
+(define (start-main)
+  (set! gameover? #f)
+  (set! complete? #f)
+  (set! score 0)
+  (set! level 1)
+  (set! timer (* 60 20))
+  (set! level-timer 0)
+  (set! player-pos-x (- 320 32))
+  (set! player-pos-y (- 360 32))
+  (set! player-color 0)
+  (set! cristal-pos-x (- 320 32))
+  (set! cristal-pos-y (- 360 96))
+  (set! cristal-vel-x 0)
+  (set! cristal-vel-y 0)
+  (set! cristal-color 1))
 
 (define (update-main)
   (cond
@@ -196,13 +235,45 @@
       (hit-player-and-photon)
       (hit-player-and-gate)
       (limit-score)
+      (increase-timer)
       (increase-level))))
 
 (define (update-bgm)
   (values))
 
 (define (update-player)
-  (values))
+  (receive (btn0 btn1 btn2 btn3 x y) (gpad-joystick-status)
+    ;; btn0: change player color
+    (when btn0
+      (cond
+        ((= player-color 0)
+          (set! player-color 1)
+          (set! cristal-color 0))
+        (else
+          (set! player-color 0)
+          (set! cristal-color 1))))
+    ;; x,y: move player
+    (when (< 0.5 (abs x))
+      (set! player-pos-x
+        (+ player-pos-x
+          (/ 5 (if (positive? x) 1 -1)
+               (if (< 0.5 (abs y)) (sqrt 2) 1)))))
+    (when (< 0.5 (abs y))
+      (set! player-pos-y
+        (+ player-pos-y
+          (/ 5 (if (positive? y) 1 -1)
+               (if (< 0.5 (abs x)) (sqrt 2) 1)))))
+    ;; limit player movement
+    (set! player-pos-x (min (max player-pos-x 110) (- 530 64)))
+    (set! player-pos-y (min (max player-pos-y 30) (- 450 64)))
+    ;; move cristal
+    (set! cristal-pos-x (+ cristal-pos-x cristal-vel-x))
+    (set! cristal-pos-y (+ cristal-pos-y cristal-vel-y))
+    ;; reflect cristal from player
+    ;; reflect cristal from border
+    ;; limit cristal movement
+    (set! cristal-pos-x (min (max cristal-pos-x 110) (- 520 64)))
+    (set! cristal-pos-y (min (max cristal-pos-y 30) (- 440 64)))))
 
 (define (update-photons)
   (values))
@@ -217,10 +288,27 @@
   (values))
 
 (define (limit-score)
-  (values))
+  (when (<= 99999999 score)
+    (set! score 99999999)))
+
+(define (increase-timer)
+  (when (< 0 timer)
+    (set! timer (- timer 1)))
+  (when (<= timer 0)
+    ;; gameover...
+    (set! wait 180)
+    (set! gameover? #t)))
 
 (define (increase-level)
-  (values))
+  (set! level-timer (+ 1 level-timer))
+  (when (<= (* 10 60) level-timer)
+    (set! level-timer 0)
+    (set! level (+ 1 level))
+    (when (<= 100 level)
+      ;; complete!
+      (set! level 99)
+      (set! wait 180)
+      (set! complete? #t))))
 
 ;;; entrypoint
 
