@@ -111,17 +111,17 @@
   (pict-read-from 8)
   (plot-mode-stamp)
   (plot-quads 7 1)
-  (draw-number 10 8 260 8 1 1)
+  (draw-number 10 8 260 8 1 score)
   ;; level
   (pict-read-from 7)
   (plot-mode-stamp)
   (plot-quads 8 1)
-  (draw-number 18 2 20 120 1.5 1)
+  (draw-number 18 2 20 120 1.5 level)
   ;; timerF
   (pict-read-from 9)
   (plot-mode-stamp)
   (plot-quads 9 1)
-  (draw-number 20 3 80 440 1 1)
+  (draw-number 20 3 80 440 1 timer)
   ;; gameover
   (draw-gameover)
   ;; complete
@@ -153,10 +153,18 @@
   (values))
 
 (define (draw-gameover)
-  (values))
+  (when gameover?
+    (pict-read-from 10)
+    (plot-mode-stamp)
+    (plot-quads 0 1)
+    (draw-number 23 8 120 360 2 score)))
 
 (define (draw-complete)
-  (values))
+  (when complete?
+    (pict-read-from 11)
+    (plot-mode-stamp)
+    (plot-quads 0 1)
+    (draw-number 23 8 120 360 2 score)))
 
 ;;; update
 
@@ -164,6 +172,10 @@
 (define wait 0)
 (define gameover? #f)
 (define complete? #f)
+
+(define score 0)
+(define level 0)
+(define timer 0)
 
 (define (update-title-scene)
   (receive (btn0 btn1 btn2 btn3 x y) (gpad-joystick-status)
