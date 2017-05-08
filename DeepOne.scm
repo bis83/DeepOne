@@ -1,6 +1,7 @@
 ;;;; Copyright (c) 2017 bis83. Distributed under the BSD license. 
 
 (use hina)
+(gpad-window-mode 640 480)
 
 ;;; pictures
 
@@ -144,7 +145,25 @@
   (plot-quads start digits))
 
 (define (draw-gates)
-  (values))
+  (define start 34)
+  (define count 0)
+  (let loop ((i 0))
+    (when (< i gate-max)
+      (when (vector-ref gate-active? i)
+        ;; SetAlpha 0.5 if gate-time <= 0
+        ;; Rotation
+        (define x (- (vector-ref gate-pos-x i) 32))
+        (define y (- (vector-ref gate-pos-y i) 32))
+        (plot-data (+ start count)
+          (f32vector  0  0    x        y
+                      0 64    x     (+ y 64)
+                     64 64 (+ x 64) (+ y 64)
+                     64  0 (+ x 64)    y))
+        (set! count (+ 1 count)))
+      (loop (+ i 1))))
+  (pict-read-from 12)
+  (plot-mode-stamp)
+  (plot-quads start count))
 
 (define (draw-player)
   (plot-data 32
@@ -198,6 +217,20 @@
 (define cristal-vel-y 0)
 (define cristal-color 1)
 
+(define gate-max 10)
+(define gate-pos-x (make-vector gate-max 0))
+(define gate-pos-y (make-vector gate-max 0))
+(define gate-vel-x (make-vector gate-max 0))
+(define gate-vel-y (make-vector gate-max 0))
+(define gate-type (make-vector gate-max 0))
+(define gate-level (make-vector gate-max 0))
+(define gate-time (make-vector gate-max 0))
+(define gate-active? (make-vector gate-max #f))
+(define active-gate-count 0)
+
+(define photon-max 512)
+(define photon-active? (make-vector photon-max #f))
+
 (define (update-title-scene)
   (receive (btn0 btn1 btn2 btn3 x y) (gpad-joystick-status)
     (when btn0
@@ -218,7 +251,10 @@
   (set! cristal-pos-y (- 360 96))
   (set! cristal-vel-x 0)
   (set! cristal-vel-y 0)
-  (set! cristal-color 1))
+  (set! cristal-color 1)
+  (vector-fill! gate-active? #f)
+  (set! active-gate-count 0)
+  (vector-fill! photon-active? #f))
 
 (define (update-main)
   (cond
@@ -232,6 +268,7 @@
       (update-player)
       (update-photons)
       (update-gates)
+      (generate-new-gate)
       (hit-player-and-photon)
       (hit-player-and-gate)
       (limit-score)
@@ -240,6 +277,13 @@
 
 (define (update-bgm)
   (values))
+
+(define (reflect-cristal x y)
+  (set! cristal-vel-x (- cristal-pos-x x))
+  (set! cristal-vel-y (- cristal-pos-y y))
+  (define nom (sqrt (+ (expt cristal-vel-x 2) (expt cristal-vel-y 2))))
+  (set! cristal-vel-x (* cristal-vel-x (/ nom) 6))
+  (set! cristal-vel-y (* cristal-vel-y (/ nom) 6)))
 
 (define (update-player)
   (receive (btn0 btn1 btn2 btn3 x y) (gpad-joystick-status)
@@ -273,11 +317,7 @@
     (when (< (+ (expt (- player-pos-x cristal-pos-x) 2)
                 (expt (- player-pos-y cristal-pos-y) 2))
              (expt 64 2))
-      (set! cristal-vel-x (- cristal-pos-x player-pos-x))
-      (set! cristal-vel-y (- cristal-pos-y player-pos-y))
-      (define nom (sqrt (+ (expt cristal-vel-x 2) (expt cristal-vel-y 2))))
-      (set! cristal-vel-x (* cristal-vel-x (/ nom) 6))
-      (set! cristal-vel-y (* cristal-vel-y (/ nom) 6)))
+      (reflect-cristal player-pos-x player-pos-y))
     ;; reflect cristal from border
     (when (or (< cristal-pos-x 110) (> cristal-pos-x (- 520 64)))
       (set! cristal-vel-x (- cristal-vel-x)))
@@ -291,10 +331,85 @@
   (values))
 
 (define (update-gates)
-  (values))
+  (let loop ((i 0))
+    (when (< i gate-max)
+      (when (vector-ref gate-active? i)
+        (vector-set! gate-time i (+ 1 (vector-ref gate-time i)))
+        (cond
+          ((negative? (vector-ref gate-time i))
+            (values))
+          (else
+            (vector-set! gate-pos-x i (+ (vector-ref gate-pos-x i) (vector-ref gate-vel-x i)))
+            (vector-set! gate-pos-y i (+ (vector-ref gate-pos-y i) (vector-ref gate-vel-y i)))
+            ;; reflect from border
+            (when (or (< (vector-ref gate-pos-x i) 110) (> (vector-ref gate-pos-x i) (- 520 64)))
+              (vector-set! gate-vel-x i (- (vector-ref gate-vel-x i))))
+            (when (or (< (vector-ref gate-pos-y i) 30) (> (vector-ref gate-pos-y i) (- 440 64)))
+              (vector-set! gate-vel-y i (- (vector-ref gate-vel-y i))))
+            ;; limit gate movement
+            (vector-set! gate-pos-x i (min (max (vector-ref gate-pos-x i) 110) (- 520 64)))
+            (vector-set! gate-pos-y i (min (max (vector-ref gate-pos-y i) 30) (- 440 64)))
+            ;; generate photons
+            )))
+      (loop (+ i 1)))))
+
+(define (create-gate type x y level)
+  (cond
+    ((>= active-gate-count (+ (/ level 10) 1)) #f)
+    (else
+      (let loop ((i 0))
+        (when (< i gate-max)
+          (cond
+            ((vector-ref gate-active? i)
+              (loop (+ i 1)))
+            (else
+              (vector-set! gate-active? i #t)
+              (vector-set! gate-level i level)
+              (vector-set! gate-pos-x i x)
+              (vector-set! gate-pos-y i y)
+              (vector-set! gate-type i type)
+              (vector-set! gate-time i -60)
+              (define rnd (/ (random 360) 360))
+              (vector-set! gate-vel-x i (cos (* 2 3.14 rnd)))
+              (vector-set! gate-vel-y i (sin (* 2 3.14 rnd)))
+              (set! active-gate-count (+ 1 active-gate-count)))))))))
+
+(define (generate-new-gate)
+  (when (= 0 (modulo timer 60))
+    (create-gate (random 8) (+ (random 300) 160) (+ (random 300) 80) level)))
+
+(define (hit-player? x y r color)
+  (and (= player-color color)
+       (< (+ (expt (- (+ player-pos-x 32) x) 2)
+             (expt (- (+ player-pos-y 32) y) 2))
+          (expt (+ r 24) 2))))
+
+(define (hit-cristal? x y r color)
+  (and (= cristal-color color)
+       (< (+ (expt (- (+ cristal-pos-x 32) x) 2)
+             (expt (- (+ cristal-pos-y 32) y) 2))
+          (expt (+ r 24) 2))
+       (begin (reflect-cristal x y) #t)))
 
 (define (hit-player-and-photon)
-  (values))
+  (define count 0)
+  (let loop ((i 0))
+    (when (< i gate-max)
+      (when (and (vector-ref gate-active? i)
+                 (<= 0 (vector-ref gate-time i))
+                 (or (hit-cristal? (vector-ref gate-pos-x i) (vector-ref gate-pos-y i) 32 0)
+                     (hit-cristal? (vector-ref gate-pos-x i) (vector-ref gate-pos-y i) 32 1)))
+        (vector-set! gate-active? i #f)
+        (set! active-gate-count (- active-gate-count 1))
+        (set! count (+ 1 count)))
+      (loop (+ i 1))))
+  (set! score (+ score (* 200 count)))
+  (set! timer (+ timer (* (- 5 (floor (/ level 20))) 60 count)))
+  (when (and (< 0 count) (= 0 active-gate-count))
+    (set! timer (+ timer (* 60 (floor (/ level 20)))))
+    (set! score (+ score (* 1000 (floor (/ level 20))))))
+  (when (> timer (* 30 60))
+    (set! timer (* 30 60))))
 
 (define (hit-player-and-gate)
   (values))
