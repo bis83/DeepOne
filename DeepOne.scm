@@ -270,7 +270,19 @@
     (set! cristal-pos-x (+ cristal-pos-x cristal-vel-x))
     (set! cristal-pos-y (+ cristal-pos-y cristal-vel-y))
     ;; reflect cristal from player
+    (when (< (+ (expt (- player-pos-x cristal-pos-x) 2)
+                (expt (- player-pos-y cristal-pos-y) 2))
+             (expt 64 2))
+      (set! cristal-vel-x (- cristal-pos-x player-pos-x))
+      (set! cristal-vel-y (- cristal-pos-y player-pos-y))
+      (define nom (sqrt (+ (expt cristal-vel-x 2) (expt cristal-vel-y 2))))
+      (set! cristal-vel-x (* cristal-vel-x (/ nom) 6))
+      (set! cristal-vel-y (* cristal-vel-y (/ nom) 6)))
     ;; reflect cristal from border
+    (when (or (< cristal-pos-x 110) (> cristal-pos-x (- 520 64)))
+      (set! cristal-vel-x (- cristal-vel-x)))
+    (when (or (< cristal-pos-y 30) (> cristal-pos-y (- 440 64)))
+      (set! cristal-vel-y (- cristal-vel-y)))
     ;; limit cristal movement
     (set! cristal-pos-x (min (max cristal-pos-x 110) (- 520 64)))
     (set! cristal-pos-y (min (max cristal-pos-y 30) (- 440 64)))))
