@@ -3,6 +3,8 @@
 (use hina)
 (gpad-window-mode 640 480)
 
+(define pi (acos -1))
+
 ;;; pictures
 
 (pict-file 0 "data/title_back.png")
@@ -180,7 +182,26 @@
   (plot-quads 32 2))
 
 (define (draw-photons)
-  (values))
+  (define start 45)
+  (define count 0)
+  (let loop ((i 0))
+    (when (< i photon-max)
+      (when (vector-ref photon-active? i)
+        ;; Rotation
+        (define x (- (vector-ref photon-pos-x i) 16))
+        (define y (- (vector-ref photon-pos-y i) 16))
+        (define u (* (remainder (vector-ref photon-type i) 4) 32))
+        (define v (* (quotient (vector-ref photon-type i) 4) 32))
+        (plot-data (+ start count)
+          (f32vector    u        v        x        y
+                        u     (+ v 32)    x     (+ y 32)
+                     (+ u 32) (+ v 32) (+ x 32) (+ y 32)
+                     (+ u 32)    v     (+ x 32)    y))
+        (set! count (+ 1 count)))
+      (loop (+ i 1))))
+  (pict-read-from 13)
+  (plot-mode-stamp)
+  (plot-quads start count))
 
 (define (draw-gameover)
   (when gameover?
@@ -229,6 +250,11 @@
 (define active-gate-count 0)
 
 (define photon-max 512)
+(define photon-pos-x (make-vector photon-max 0))
+(define photon-pos-y (make-vector photon-max 0))
+(define photon-vel-x (make-vector photon-max 0))
+(define photon-vel-y (make-vector photon-max 0))
+(define photon-type (make-vector photon-max 0))
 (define photon-active? (make-vector photon-max #f))
 
 (define (update-title-scene)
@@ -328,7 +354,129 @@
     (set! cristal-pos-y (min (max cristal-pos-y 30) (- 440 64)))))
 
 (define (update-photons)
-  (values))
+  (let loop ((i 0))
+    (when (< i photon-max)
+      (when (vector-ref photon-active? i)
+        (vector-set! photon-pos-x i (+ (vector-ref photon-pos-x i) (vector-ref photon-vel-x i)))
+        (vector-set! photon-pos-y i (+ (vector-ref photon-pos-y i) (vector-ref photon-vel-y i)))
+        (when (or (< (vector-ref photon-pos-x i) (- 120 16))
+                  (> (vector-ref photon-pos-x i) (+ 520 16))
+                  (< (vector-ref photon-pos-y i) (- 40 16))
+                  (> (vector-ref photon-pos-y i) (+ 440 16)))
+          (vector-set! photon-active? i #f)))
+      (loop (+ i 1)))))
+
+(define (create-photon type x y vx vy)
+  (let loop ((i 0))
+    (when (< i photon-max)
+      (cond
+        ((vector-ref photon-active? i)
+          (loop (+ i 1)))
+        (else
+          (vector-set! photon-active? i #t)
+          (vector-set! photon-type i type)
+          (vector-set! photon-pos-x i x)
+          (vector-set! photon-pos-y i y)
+          (vector-set! photon-vel-x i vx)
+          (vector-set! photon-vel-y i vy))))))
+
+(define (gate-shoot-0 t l x y)
+  (when (= 0 (modulo t (- 60 (* (modulo l 8) 3))))
+    (define l/10 (quotient l 10))
+    (let loop ((j 0))
+      (when (< j (+ 8 l/10))
+        (create-photon 0 x y
+          (* 2 (cos (/ (* 2 pi j) (+ 8 l/10))))
+          (* 2 (sin (/ (* 2 pi j) (+ 8 l/10)))))
+        (loop (+ j 1))))))
+
+(define (gate-shoot-1 t l x y)
+  (when (= 0 (modulo t (- 60 (* (modulo l 10) 3))))
+    (define l/10 (quotient l 10))
+    (define rnd (random 360))
+    (let loop ((j 0))
+      (when (< j (+ 8 l/10))
+        (create-photon 1 x y
+          (* 2 (cos (+ (/ (* pi j) (+ 8 l/10)) (* 2 pi rnd (/ 360)))))
+          (* 2 (sin (+ (/ (* pi j) (+ 8 l/10)) (* 2 pi rnd (/ 360))))))
+        (loop (+ j 1))))))
+
+(define (gate-shoot-2 t l x y)
+  (when (= 0 (modulo t (- 12 (quotient (modulo l 10) 3))))
+    (define l2 (* (quotient l 10) 10))
+    (create-photon 2 x y
+      (* 2 (cos (/ (* 2 pi (modulo t (+ 60 l2))) (+ 60 l2))))
+      (* 2 (sin (/ (* 2 pi (modulo t (+ 60 l2))) (+ 60 l2)))))))
+
+(define (gate-shoot-3 t l x y)
+  (when (= 0 (modulo t (- 30 (* 2 (modulo l 10)))))
+    (define l/10 (quotient l 10))
+    (define rnd (random 360))
+    (let loop ((j 0))
+      (when (< j (+ 4 l/10))
+        (create-photon 3 x y
+          (* 2 (cos (/ (* 2 pi rnd) 360)))
+          (* 2 (sin (/ (* 2 pi rnd) 360))))
+        (loop (+ j 1))))))
+
+(define (gate-shoot-4 t l x y)
+  (when (= 0 (modulo t (- 60 (* 3 (modulo l 8)))))
+    (define l/10 (quotient l 10))
+    (let loop ((j 0))
+      (when (< j (+ 4 l/10))
+        (create-photon 4 x y
+          (* 2 (cos (/ (* 2 pi j) (+ 4 l/10))))
+          (* 2 (sin (/ (* 2 pi j) (+ 4 l/10)))))
+        (loop (+ j 1)))))
+  (when (= 0 (modulo (+ t 30) (- 60 (* 3 (modulo l 8)))))
+    (define l/10 (quotient l 10))
+    (let loop ((j 0))
+      (when (< j (+ 4 l/10))
+        (create-photon 4 x y
+          (* 2 (cos (/ (* 2 pi (+ (* 2 j) 1)) (* 2 (+ 4 l/10)))))
+          (* 2 (sin (/ (* 2 pi (+ (* 2 j) 1)) (* 2 (+ 4 l/10))))))
+        (loop (+ j 1))))))
+
+(define (gate-shoot-5 t l x y)
+  (when (= 0 (modulo t (- 60 (* 3 (modulo l 10)))))
+    (define l/10 (quotient l 10))
+    (define rnd (random 360))
+    (let loop ((j 0))
+      (when (< j (+ 4 l/10))
+        (create-photon 5 x y
+          (* 2 (cos (+ (* (/ pi 2) (/ j (+ 4 l/10))) (/ (* 2 pi rnd) 360))))
+          (* 2 (sin (+ (* (/ pi 2) (/ j (+ 4 l/10))) (/ (* 2 pi rnd) 360)))))
+        (create-photon 5 x y
+          (* 4 (cos (+ (* (/ pi 2) (/ j (+ 4 l/10))) (/ (* 2 pi rnd) 360))))
+          (* 4 (sin (+ (* (/ pi 2) (/ j (+ 4 l/10))) (/ (* 2 pi rnd) 360)))))
+        (loop (+ j 1))))))
+
+(define (gate-shoot-6 t l x y)
+  (when (= 0 (modulo t (- 24 (quotient (modulo l 10) 3))))
+    (define l2 (* (quotient l 10) 10))
+    (create-photon 6 x y
+      (* 2 (cos (/ (* 2 pi (modulo t (+ 60 l2))) (+ 60 l2))))
+      (* 2 (sin (/ (* 2 pi (modulo t (+ 60 l2))) (+ 60 l2)))))
+    (create-photon 6 x y
+      (* -2 (cos (/ (* 2 pi (modulo t (+ 60 l2))) (+ 60 l2))))
+      (* -2 (sin (/ (* 2 pi (modulo t (+ 60 l2))) (+ 60 l2)))))))
+
+(define (gate-shoot-7 t l x y)
+  (when (= 0 (modulo t (- 16 (quotient (modulo l 10) 3))))
+    (define l2 (* (quotient l 10) 10))
+    (create-photon 7 x y
+      (* 0.5 (+ (random 5) 2) (cos (/ (* 2 pi (modulo t (+ 60 l2))) (+ 60 l2))))
+      (* 0.5 (+ (random 5) 2) (sin (/ (* 2 pi (modulo t (+ 60 l2))) (+ 60 l2)))))))
+
+(define gate-shoot-table
+  (vector gate-shoot-0
+          gate-shoot-1
+          gate-shoot-2
+          gate-shoot-3
+          gate-shoot-4
+          gate-shoot-5
+          gate-shoot-6
+          gate-shoot-7))
 
 (define (update-gates)
   (let loop ((i 0))
@@ -350,7 +498,11 @@
             (vector-set! gate-pos-x i (min (max (vector-ref gate-pos-x i) 110) (- 520 64)))
             (vector-set! gate-pos-y i (min (max (vector-ref gate-pos-y i) 30) (- 440 64)))
             ;; generate photons
-            )))
+            ((vector-ref gate-shoot-table (vector-ref gate-type i))
+              (vector-ref gate-time i)
+              (vector-ref gate-level i)
+              (vector-ref gate-pos-x i)
+              (vector-ref gate-pos-y i)))))
       (loop (+ i 1)))))
 
 (define (create-gate type x y level)
@@ -370,8 +522,8 @@
               (vector-set! gate-type i type)
               (vector-set! gate-time i -60)
               (define rnd (/ (random 360) 360))
-              (vector-set! gate-vel-x i (cos (* 2 3.14 rnd)))
-              (vector-set! gate-vel-y i (sin (* 2 3.14 rnd)))
+              (vector-set! gate-vel-x i (cos (* 2 pi rnd)))
+              (vector-set! gate-vel-y i (sin (* 2 pi rnd)))
               (set! active-gate-count (+ 1 active-gate-count)))))))))
 
 (define (generate-new-gate)
@@ -392,6 +544,9 @@
        (begin (reflect-cristal x y) #t)))
 
 (define (hit-player-and-photon)
+  (values))
+
+(define (hit-player-and-gate)
   (define count 0)
   (let loop ((i 0))
     (when (< i gate-max)
@@ -410,9 +565,6 @@
     (set! score (+ score (* 1000 (floor (/ level 20))))))
   (when (> timer (* 30 60))
     (set! timer (* 30 60))))
-
-(define (hit-player-and-gate)
-  (values))
 
 (define (limit-score)
   (when (<= 99999999 score)
