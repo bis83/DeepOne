@@ -1,154 +1,97 @@
 ;;;; Copyright (c) 2017 bis83. Distributed under the BSD license. 
 
 (use hina)
-(gpad-window-mode 640 480)
+(screen 640 480 0.05 0.05 0.1)
+(game void)
+(game void)
 
 (define pi (acos -1))
 
 ;;; pictures
 
-(pict-file 0 "data/title_back.png")
-(pict-file 1 "data/title.png")
-(pict-file 2 "data/push_start.png")
-(pict-file 3 "data/field01.png")
-(pict-file 4 "data/frame.png")
-(pict-file 5 "data/time.png")
-(pict-file 6 "data/number.png")
-(pict-file 7 "data/level.png")
-(pict-file 8 "data/score.png")
-(pict-file 9 "data/time_f.png")
-(pict-file 10 "data/gameover.png")
-(pict-file 11 "data/clear.png")
-(pict-file 12 "data/gate.png")
-(pict-file 13 "data/tama.png")
-(pict-file 14 "data/player_cristal.png")
+(png 0   0   0 "data/frame.png")          ; 640x480
+(png 0   0 480 "data/field01.png")        ; 400x400
+(png 0   0 880 "data/time.png")           ; 400x20
+(png 0 640   0 "data/number.png")         ; 240x24
+(png 0 640  24 "data/level.png")          ; 120x80
+(png 0 640 104 "data/score.png")          ; 120x40
+(png 0 640 144 "data/time_f.png")         ; 120x40
+(png 0 640 320 "data/gate.png")           ; 64x64
+(png 0 640 384 "data/tama.png")           ; 128x64
+(png 0 640 448 "data/player_cristal.png") ; 128x128
+(png 1   0   0 "data/title_back.png")     ; 640x480
+(png 1   0 480 "data/title.png")          ; 640x240
+(png 1   0 720 "data/push_start.png")     ; 320x120
+(png 2   0   0 "data/gameover.png")       ; 640x480
+(png 2   0 480 "data/clear.png")          ; 640x480
 
 ;;; plots
 
-(plot-data 0
-  (f32vector   0   0   0   0
-               0 480   0 480
-             640 480 640 480
-             640   0 640   0))
-(plot-data 1
-  (f32vector   0   0   0   0
-               0 240   0 240
-             640 240 640 240
-             640   0 640   0))
-(plot-data 2
-  (f32vector   0   0 160 320
-               0 120 160 440
-             320 120 480 440
-             320   0 480 320))
-(plot-data 3
-  (f32vector   0   0 120  40
-               0 400 120 440
-             400 400 520 440
-             400   0 520  40))
-(plot-data 4
-  (f32vector   0   0   0   0
-               0 480   0 480
-             640 480 640 480
-             640   0 640   0))
-(plot-data 5
-  (f32vector   0   0 120 450
-               0  20 120 470
-             400  20 520 470
-             400   0 520 450))
-(plot-data 7
-  (f32vector   0   0 130   0
-               0  40 130  40
-             120  40 250  40
-             120   0 250   0))
-(plot-data 8
-  (f32vector   0   0   0  40
-               0  80   0 120
-             120  80 120 120
-             120   0 120  40))
-(plot-data 9
-  (f32vector   0   0   0 400
-               0  40   0 440
-             120  40 120 440
-             120   0 120 400))
+(define (plot-p sx sy dx dy)
+  (plot sx sy (* 4 (floor dx)) (* 4 (floor dy)) 0 65535/4 255 255 255 255))
+(define (plot-a sx sy dx dy a)
+  (plot sx sy (* 4 (floor dx)) (* 4 (floor dy)) 0 65535/4 255 255 255 a))
+
+(define (plot-4p sx sy dx dy w h)
+  (plot-p (+ sx 0) (+ sy 0) (+ dx 0) (+ dy 0))
+  (plot-p (+ sx 0) (+ sy h) (+ dx 0) (+ dy h))
+  (plot-p (+ sx w) (+ sy h) (+ dx w) (+ dy h))
+  (plot-p (+ sx w) (+ sy 0) (+ dx w) (+ dy 0)))
+
+(ploti 0)
+(plot-4p   0   0   0   0 640 480) ;  0, title_back
+(plot-4p   0 480   0   0 640 240) ;  1, title
+(plot-4p   0 720 160 320 320 240) ;  2, push_start
+(plot-4p   0 480 120  40 400 400) ;  3, field01
+(plot-4p   0   0   0   0 640 480) ;  4, frame
+(plot-4p   0 880 120 450 400  20) ;  5, time
+(plot-4p 640 104 130   0 120  40) ;  6, score
+(plot-4p 640  24   0  40 120  80) ;  7, level
+(plot-4p 640 144   0 400 120  40) ;  8, time_f
+(plot-4p   0   0   0   0 640 480) ;  9, gameover
+(plot-4p   0 480   0 400 640 480) ; 10, clear
 
 ;;; draw
 
 (define (draw-title-scene)
-  (pict-write-to-screen)
-  (pict-clear 0 0 0 0)
-  ;; title-back
-  (pict-read-from 0)
-  (plot-mode-stamp)
-  (plot-quads 0 1)
-  ;; titile
-  (pict-read-from 1)
-  (plot-mode-stamp)
-  (plot-quads 1 1)
-  ;; push-start
-  (pict-read-from 2)
-  (plot-mode-stamp)
-  (plot-quads 2 1))
+  (face -1 1 -1 -1 0 3))
 
 (define (draw-main)
-  (pict-write-to-screen)
-  (pict-clear 0 0 0 0)
-  ;; background
-  (pict-read-from 3)
-  (plot-mode-stamp)
-  (plot-quads 3 1)
-  ;; gates
+  (face -1 0 -1 -1 3 1)
   (draw-gates)
-  ;; player
   (draw-player)
-  ;; photons
   (draw-photons)
-  ;; frame
-  (pict-read-from 4)
-  (plot-mode-stamp)
-  (plot-quads 4 1)
-  ;; timer
-  (pict-read-from 5)
-  (plot-mode-stamp)
-  (plot-quads 5 1)
-  ;; score
-  (pict-read-from 8)
-  (plot-mode-stamp)
-  (plot-quads 7 1)
-  (draw-number 10 8 260 8 1 score)
-  ;; level
-  (pict-read-from 7)
-  (plot-mode-stamp)
-  (plot-quads 8 1)
-  (draw-number 18 2 20 120 1.5 level)
-  ;; timerF
-  (pict-read-from 9)
-  (plot-mode-stamp)
-  (plot-quads 9 1)
-  (draw-number 20 3 80 440 1 (inexact->exact (floor (/ timer 60))))
-  ;; gameover
+  (face -1 0 -1 -1 4 1)
+  (face -1 0 -1 -1 5 1)
+  (face -1 0 -1 -1 6 1)
+  (draw-number 100 8 260 8 1 score)
+  (face -1 0 -1 -1 7 1)
+  (draw-number 200 2 20 120 1.5 level)
+  (face -1 0 -1 -1 8 1)
+  (draw-number 300 3 80 440 1 (inexact->exact (floor (/ timer 60))))
   (draw-gameover)
-  ;; complete
   (draw-complete))
 
 (define (draw-number start digits x y s num)
-  (let loop ((i 0)
-             (n num))
+  (ploti start)
+  (let loop ((i 0) (n num))
     (when (< i digits)
       (define u (expt 10 (- digits i 1)))
       (define k (inexact->exact (floor (/ n u))))
-      (plot-data (+ start i)
-        (f32vector  (* k 24)        0 (+ x (* s i 24))       y
-                    (* k 24)       24 (+ x (* s i 24))       (+ y (* s 24))
-                    (* (+ k 1) 24) 24 (+ x (* s (+ i 1) 24)) (+ y (* s 24))
-                    (* (+ k 1) 24)  0 (+ x (* s (+ i 1) 24)) y))
+      (plot-4p (+ 640 (* k 24)) 0 (+ x (* s i 24)) y 24 24)
       (loop (+ i 1) (modulo n u))))
-  (pict-read-from 6)
-  (plot-mode-stamp)
-  (plot-quads start digits))
+  (face -1 0 -1 -1 start digits))
+
+(define (draw-player)
+  (ploti 50)
+  (plot-4p (+ 640 (* player-color 64))  (+ 448  0) player-pos-x  player-pos-y  64 64)
+  (plot-4p (+ 640 (* cristal-color 64)) (+ 448 64) cristal-pos-x cristal-pos-y 64 64)
+  (face -1 0 -1 -1 50 2))
 
 (define (draw-gates)
-  (define start 34)
+  (define start 400)
   (define count 0)
+  (ploti start)
   (let loop ((i 0))
     (when (< i gate-max)
       (when (vector-ref gate-active? i)
@@ -156,34 +99,15 @@
         ;; Rotation
         (define x (- (vector-ref gate-pos-x i) 32))
         (define y (- (vector-ref gate-pos-y i) 32))
-        (plot-data (+ start count)
-          (f32vector  0  0    x        y
-                      0 64    x     (+ y 64)
-                     64 64 (+ x 64) (+ y 64)
-                     64  0 (+ x 64)    y))
+        (plot-4p 640 320 x y 64 64)
         (set! count (+ 1 count)))
       (loop (+ i 1))))
-  (pict-read-from 12)
-  (plot-mode-stamp)
-  (plot-quads start count))
-
-(define (draw-player)
-  (plot-data 32
-    (f32vector (* player-color 64)          0 player-pos-x         player-pos-y
-               (* player-color 64)         64 player-pos-x         (+ player-pos-y 64)
-               (* (+ player-color 1) 64)   64 (+ player-pos-x 64)  (+ player-pos-y 64)
-               (* (+ player-color 1) 64)    0 (+ player-pos-x 64)  player-pos-y
-               (* cristal-color 64)        64 cristal-pos-x        cristal-pos-y
-               (* cristal-color 64)       128 cristal-pos-x        (+ cristal-pos-y 64)
-               (* (+ cristal-color 1) 64) 128 (+ cristal-pos-x 64) (+ cristal-pos-y 64)
-               (* (+ cristal-color 1) 64)  64 (+ cristal-pos-x 64) cristal-pos-y))
-  (pict-read-from 14)
-  (plot-mode-stamp)
-  (plot-quads 32 2))
+  (face -1 0 -1 -1 start count))
 
 (define (draw-photons)
-  (define start 45)
+  (define start 500)
   (define count 0)
+  (ploti start)
   (let loop ((i 0))
     (when (< i photon-max)
       (when (vector-ref photon-active? i)
@@ -192,30 +116,20 @@
         (define y (- (vector-ref photon-pos-y i) 16))
         (define u (* (remainder (vector-ref photon-type i) 4) 32))
         (define v (* (quotient (vector-ref photon-type i) 4) 32))
-        (plot-data (+ start count)
-          (f32vector    u        v        x        y
-                        u     (+ v 32)    x     (+ y 32)
-                     (+ u 32) (+ v 32) (+ x 32) (+ y 32)
-                     (+ u 32)    v     (+ x 32)    y))
+        (plot-4p (+ 640 u) (+ 384 v) x y 32 32)
         (set! count (+ 1 count)))
       (loop (+ i 1))))
-  (pict-read-from 13)
-  (plot-mode-stamp)
-  (plot-quads start count))
+  (face -1 0 -1 -1 start count))
 
 (define (draw-gameover)
   (when gameover?
-    (pict-read-from 10)
-    (plot-mode-stamp)
-    (plot-quads 0 1)
-    (draw-number 23 8 120 360 2 score)))
+    (face -1 2 -1 -1 9 1)
+    (draw-number 1000 8 120 360 2 score)))
 
 (define (draw-complete)
   (when complete?
-    (pict-read-from 11)
-    (plot-mode-stamp)
-    (plot-quads 0 1)
-    (draw-number 23 8 120 360 2 score)))
+    (face -1 2 -1 -1 10 1)
+    (draw-number 1000 8 120 360 2 score)))
 
 ;;; update
 
@@ -257,11 +171,10 @@
 (define photon-type (make-vector photon-max 0))
 (define photon-active? (make-vector photon-max #f))
 
-(define (update-title-scene)
-  (receive (btn0 btn1 btn2 btn3 x y) (gpad-joystick-status)
-    (when btn0
-      (start-main)
-      (set! scene-name 'main))))
+(define (update-title-scene b0)
+  (when (= b0 1)
+    (start-main)
+    (set! scene-name 'main)))
 
 (define (start-main)
   (set! gameover? #f)
@@ -282,16 +195,15 @@
   (set! active-gate-count 0)
   (vector-fill! photon-active? #f))
 
-(define (update-main)
+(define (update-main b0 l r u d)
   (cond
     ((< 0 wait)
       (set! wait (- wait 1)))
     ((or gameover? complete?)
-      (receive (btn0 btn1 btn2 btn3 x y) (gpad-joystick-status)
-        (when btn0 (set! scene-name 'title))))
+      (when (= b0 1) (set! scene-name 'title)))
     (else
       (update-bgm)
-      (update-player)
+      (update-player b0 l r u d)
       (update-photons)
       (update-gates)
       (generate-new-gate)
@@ -311,47 +223,48 @@
   (set! cristal-vel-x (* cristal-vel-x (/ nom) 6))
   (set! cristal-vel-y (* cristal-vel-y (/ nom) 6)))
 
-(define (update-player)
-  (receive (btn0 btn1 btn2 btn3 x y) (gpad-joystick-status)
-    ;; btn0: change player color
-    (when btn0
-      (cond
-        ((= player-color 0)
-          (set! player-color 1)
-          (set! cristal-color 0))
-        (else
-          (set! player-color 0)
-          (set! cristal-color 1))))
-    ;; x,y: move player
-    (when (< 0.5 (abs x))
-      (set! player-pos-x
-        (+ player-pos-x
-          (/ 5 (if (positive? x) 1 -1)
-               (if (< 0.5 (abs y)) (sqrt 2) 1)))))
-    (when (< 0.5 (abs y))
-      (set! player-pos-y
-        (+ player-pos-y
-          (/ 5 (if (positive? y) 1 -1)
-               (if (< 0.5 (abs x)) (sqrt 2) 1)))))
-    ;; limit player movement
-    (set! player-pos-x (min (max player-pos-x 110) (- 530 64)))
-    (set! player-pos-y (min (max player-pos-y 30) (- 450 64)))
-    ;; move cristal
-    (set! cristal-pos-x (+ cristal-pos-x cristal-vel-x))
-    (set! cristal-pos-y (+ cristal-pos-y cristal-vel-y))
-    ;; reflect cristal from player
-    (when (< (+ (expt (- player-pos-x cristal-pos-x) 2)
-                (expt (- player-pos-y cristal-pos-y) 2))
-             (expt 64 2))
-      (reflect-cristal player-pos-x player-pos-y))
-    ;; reflect cristal from border
-    (when (or (< cristal-pos-x 110) (> cristal-pos-x (- 520 64)))
-      (set! cristal-vel-x (- cristal-vel-x)))
-    (when (or (< cristal-pos-y 30) (> cristal-pos-y (- 440 64)))
-      (set! cristal-vel-y (- cristal-vel-y)))
-    ;; limit cristal movement
-    (set! cristal-pos-x (min (max cristal-pos-x 110) (- 520 64)))
-    (set! cristal-pos-y (min (max cristal-pos-y 30) (- 440 64)))))
+(define (update-player b0 l r u d)
+  ;; b0: change player color
+  (when (= b0 1)
+    (cond
+      ((= player-color 0)
+        (set! player-color 1)
+        (set! cristal-color 0))
+      (else
+        (set! player-color 0)
+        (set! cristal-color 1))))
+  ;; x,y: move player
+  (define x (+ (if (< 0 l) -1 0) (if (< 0 r) +1 0)))
+  (define y (+ (if (< 0 u) -1 0) (if (< 0 d) +1 0)))
+  (when (< 0.5 (abs x))
+    (set! player-pos-x
+      (+ player-pos-x
+        (/ 5 (if (positive? x) 1 -1)
+             (if (< 0.5 (abs y)) (sqrt 2) 1)))))
+  (when (< 0.5 (abs y))
+    (set! player-pos-y
+      (+ player-pos-y
+        (/ 5 (if (positive? y) 1 -1)
+             (if (< 0.5 (abs x)) (sqrt 2) 1)))))
+  ;; limit player movement
+  (set! player-pos-x (min (max player-pos-x 110) (- 530 64)))
+  (set! player-pos-y (min (max player-pos-y 30) (- 450 64)))
+  ;; move cristal
+  (set! cristal-pos-x (+ cristal-pos-x cristal-vel-x))
+  (set! cristal-pos-y (+ cristal-pos-y cristal-vel-y))
+  ;; reflect cristal from player
+  (when (< (+ (expt (- player-pos-x cristal-pos-x) 2)
+              (expt (- player-pos-y cristal-pos-y) 2))
+           (expt 64 2))
+    (reflect-cristal player-pos-x player-pos-y))
+  ;; reflect cristal from border
+  (when (or (< cristal-pos-x 110) (> cristal-pos-x (- 520 64)))
+    (set! cristal-vel-x (- cristal-vel-x)))
+  (when (or (< cristal-pos-y 30) (> cristal-pos-y (- 440 64)))
+    (set! cristal-vel-y (- cristal-vel-y)))
+  ;; limit cristal movement
+  (set! cristal-pos-x (min (max cristal-pos-x 110) (- 520 64)))
+  (set! cristal-pos-y (min (max cristal-pos-y 30) (- 440 64))))
 
 (define (update-photons)
   (let loop ((i 0))
@@ -602,13 +515,14 @@
 
 ;;; entrypoint
 
-(define (deep-one)
+(define (deep-one fc b0 b1 b2 b3 l r u d)
   (case scene-name
     ((title)
-      (update-title-scene)
+      (update-title-scene b0)
       (draw-title-scene))
     ((main)
-      (update-main)
-      (draw-main))))
-(awake deep-one)
+      (update-main b0 l r u d)
+      (draw-main)))
+  (game deep-one))
+(game deep-one)
 
