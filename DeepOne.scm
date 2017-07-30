@@ -135,11 +135,15 @@
 
 (define (draw-gameover)
   (when gameover?
+    (ploti 9)
+    (plot-4a   0   0   0   0 640 480 255 255 255 (- 255 wait))
     (face -1 2 -1 -1 9 1)
     (draw-number 1000 8 120 360 2 score)))
 
 (define (draw-complete)
   (when complete?
+    (ploti 10)
+    (plot-4a   0 480   0   0 640 480 255 255 255 (- 255 wait))
     (face -1 2 -1 -1 10 1)
     (draw-number 1000 8 120 360 2 score)))
 
