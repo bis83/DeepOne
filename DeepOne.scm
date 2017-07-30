@@ -12,13 +12,13 @@
 (png 0   0   0 "data/frame.png")          ; 640x480
 (png 0   0 480 "data/field01.png")        ; 400x400
 (png 0   0 880 "data/time.png")           ; 400x20
-(png 0 640   0 "data/number.png")         ; 240x24
-(png 0 640  24 "data/level.png")          ; 120x80
-(png 0 640 104 "data/score.png")          ; 120x40
-(png 0 640 144 "data/time_f.png")         ; 120x40
-(png 0 640 320 "data/gate.png")           ; 64x64
-(png 0 640 384 "data/tama.png")           ; 128x64
-(png 0 640 448 "data/player_cristal.png") ; 128x128
+(png 0 650   0 "data/number.png")         ; 240x24
+(png 0 650  24 "data/level.png")          ; 120x80
+(png 0 650 104 "data/score.png")          ; 120x40
+(png 0 650 144 "data/time_f.png")         ; 120x40
+(png 0 650 320 "data/gate.png")           ; 64x64
+(png 0 650 384 "data/tama.png")           ; 128x64
+(png 0 650 448 "data/player_cristal.png") ; 128x128
 (png 1   0   0 "data/title_back.png")     ; 640x480
 (png 1   0 480 "data/title.png")          ; 640x240
 (png 1   0 720 "data/push_start.png")     ; 320x120
@@ -42,6 +42,24 @@
   (plot-a (+ sx 0) (+ sy h) (+ dx 0) (+ dy h) r g b a)
   (plot-a (+ sx w) (+ sy h) (+ dx w) (+ dy h) r g b a)
   (plot-a (+ sx w) (+ sy 0) (+ dx w) (+ dy 0) r g b a))
+
+(define (plot-ra sx sy dx dy a)
+  (plot sx sy (* 4 (floor dx)) (* 4 (floor dy)) 0 65535/4 255 255 255 a))
+(define (plot-4ra sx sy dx dy w h rot a)
+  (define (rx x y) (- (* (cos rot) x) (* (sin rot) y)))
+  (define (ry x y) (+ (* (sin rot) x) (* (cos rot) y)))
+  (define rx0 (rx (/ w -2) (/ h -2)))
+  (define ry0 (ry (/ w -2) (/ h -2)))
+  (define rx1 (rx (/ w -2) (/ h +2)))
+  (define ry1 (ry (/ w -2) (/ h +2)))
+  (define rx2 (rx (/ w +2) (/ h +2)))
+  (define ry2 (ry (/ w +2) (/ h +2)))
+  (define rx3 (rx (/ w +2) (/ h -2)))
+  (define ry3 (ry (/ w +2) (/ h -2)))
+  (plot-ra (+ sx 0) (+ sy 0) (+ dx rx0) (+ dy ry0) a)
+  (plot-ra (+ sx 0) (+ sy h) (+ dx rx1) (+ dy ry1) a)
+  (plot-ra (+ sx w) (+ sy h) (+ dx rx2) (+ dy ry2) a)
+  (plot-ra (+ sx w) (+ sy 0) (+ dx rx3) (+ dy ry3) a))
 
 (ploti 0)
 (plot-4p   0   0   0   0 640 480) ;  0, title_back
@@ -83,14 +101,14 @@
     (when (< i digits)
       (define u (expt 10 (- digits i 1)))
       (define k (inexact->exact (floor (/ n u))))
-      (plot-4p (+ 640 (* k 24)) 0 (+ x (* s i 24)) y 24 24)
+      (plot-4p (+ 650 (* k 24)) 0 (+ x (* s i 24)) y 24 24)
       (loop (+ i 1) (modulo n u))))
   (face -1 0 -1 -1 start digits))
 
 (define (draw-player)
   (ploti 50)
-  (plot-4p (+ 640 (* player-color 64))  (+ 448  0) player-pos-x  player-pos-y  64 64)
-  (plot-4p (+ 640 (* cristal-color 64)) (+ 448 64) cristal-pos-x cristal-pos-y 64 64)
+  (plot-4p (+ 650 (* player-color 64))  (+ 448  0) player-pos-x  player-pos-y  64 64)
+  (plot-4p (+ 650 (* cristal-color 64)) (+ 448 64) cristal-pos-x cristal-pos-y 64 64)
   (face -1 0 -1 -1 50 2))
 
 (define (draw-gates)
@@ -100,11 +118,11 @@
   (let loop ((i 0))
     (when (< i gate-max)
       (when (vector-ref gate-active? i)
-        ;; SetAlpha 0.5 if gate-time <= 0
-        ;; Rotation
-        (define x (- (vector-ref gate-pos-x i) 32))
-        (define y (- (vector-ref gate-pos-y i) 32))
-        (plot-4p 640 320 x y 64 64)
+        (define x (vector-ref gate-pos-x i))
+        (define y (vector-ref gate-pos-y i))
+        (define r (* 2 pi (/ (vector-ref gate-time i) 120)))
+        (define a (if (<= (vector-ref gate-time i) 0) 128 255))
+        (plot-4ra 650 320 x y 64 64 r a)
         (set! count (+ 1 count)))
       (loop (+ i 1))))
   (face -1 0 -1 -1 start count))
@@ -117,11 +135,12 @@
     (when (< i photon-max)
       (when (vector-ref photon-active? i)
         ;; Rotation
-        (define x (- (vector-ref photon-pos-x i) 16))
-        (define y (- (vector-ref photon-pos-y i) 16))
+        (define x (vector-ref photon-pos-x i))
+        (define y (vector-ref photon-pos-y i))
         (define u (* (remainder (vector-ref photon-type i) 4) 32))
         (define v (* (quotient (vector-ref photon-type i) 4) 32))
-        (plot-4p (+ 640 u) (+ 384 v) x y 32 32)
+        (define r (atan (vector-ref photon-vel-y i) (vector-ref photon-vel-x i)))
+        (plot-4ra (+ 650 u) (+ 384 v) x y 32 32 r 255)
         (set! count (+ 1 count)))
       (loop (+ i 1))))
   (face -1 0 -1 -1 start count))
