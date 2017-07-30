@@ -29,14 +29,19 @@
 
 (define (plot-p sx sy dx dy)
   (plot sx sy (* 4 (floor dx)) (* 4 (floor dy)) 0 65535/4 255 255 255 255))
-(define (plot-a sx sy dx dy a)
-  (plot sx sy (* 4 (floor dx)) (* 4 (floor dy)) 0 65535/4 255 255 255 a))
-
 (define (plot-4p sx sy dx dy w h)
   (plot-p (+ sx 0) (+ sy 0) (+ dx 0) (+ dy 0))
   (plot-p (+ sx 0) (+ sy h) (+ dx 0) (+ dy h))
   (plot-p (+ sx w) (+ sy h) (+ dx w) (+ dy h))
   (plot-p (+ sx w) (+ sy 0) (+ dx w) (+ dy 0)))
+
+(define (plot-a sx sy dx dy r g b a)
+  (plot sx sy (* 4 (floor dx)) (* 4 (floor dy)) 0 65535/4 r g b a))
+(define (plot-4a sx sy dx dy w h r g b a)
+  (plot-a (+ sx 0) (+ sy 0) (+ dx 0) (+ dy 0) r g b a)
+  (plot-a (+ sx 0) (+ sy h) (+ dx 0) (+ dy h) r g b a)
+  (plot-a (+ sx w) (+ sy h) (+ dx w) (+ dy h) r g b a)
+  (plot-a (+ sx w) (+ sy 0) (+ dx w) (+ dy 0) r g b a))
 
 (ploti 0)
 (plot-4p   0   0   0   0 640 480) ;  0, title_back
@@ -62,7 +67,7 @@
   (draw-player)
   (draw-photons)
   (face -1 0 -1 -1 4 1)
-  (face -1 0 -1 -1 5 1)
+  (draw-timebar)
   (face -1 0 -1 -1 6 1)
   (draw-number 100 8 260 8 1 score)
   (face -1 0 -1 -1 7 1)
@@ -120,6 +125,13 @@
         (set! count (+ 1 count)))
       (loop (+ i 1))))
   (face -1 0 -1 -1 start count))
+
+(define (draw-timebar)
+  (define w (* 400 (/ timer (* 60 30))))
+  (ploti 20)
+  (plot-4a   0 880 120 450 400  20  36  36  36 196)
+  (plot-4a   0 880 120 450   w  20 255 255 255 196)
+  (face -1 0 -1 -1 20 2))
 
 (define (draw-gameover)
   (when gameover?
