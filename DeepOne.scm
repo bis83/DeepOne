@@ -221,20 +221,20 @@
   (set! active-gate-count 0)
   (vector-fill! photon-active? #f))
 
-(define (update-title-scene b0)
-  (when (= b0 1)
+(define (update-title-scene s)
+  (when (= (s 'button0) 1)
     (reset-status)
     (set! scene-name 'main)))
 
-(define (update-main b0 l r u d)
+(define (update-main s)
   (cond
     ((< 0 wait)
       (set! wait (- wait 1)))
     ((or gameover? complete?)
-      (when (= b0 1)
+      (when (= (s 'button0) 1)
         (set! scene-name 'title)))
     (else
-      (update-player b0 l r u d)
+      (update-player s)
       (update-photons)
       (update-gates)
       (generate-new-gate)
@@ -251,9 +251,9 @@
   (set! cristal-vel-x (* cristal-vel-x (/ nom) 6))
   (set! cristal-vel-y (* cristal-vel-y (/ nom) 6)))
 
-(define (update-player b0 l r u d)
+(define (update-player s)
   ;; b0: change player color
-  (when (= b0 1)
+  (when (= (s 'button0) 1)
     (cond
       ((= player-color 0)
         (set! player-color 1)
@@ -262,8 +262,8 @@
         (set! player-color 0)
         (set! cristal-color 1))))
   ;; x,y: move player
-  (define x (+ (if (< 0 l) -1 0) (if (< 0 r) +1 0)))
-  (define y (+ (if (< 0 u) -1 0) (if (< 0 d) +1 0)))
+  (define x (+ (if (< 0 (s 'left)) -1 0) (if (< 0 (s 'right)) +1 0)))
+  (define y (+ (if (< 0 (s 'up)) -1 0) (if (< 0 (s 'down)) +1 0)))
   (when (< 0.5 (abs x))
     (set! player-pos-x
       (+ player-pos-x
@@ -543,13 +543,13 @@
 
 ;;; entrypoint
 
-(define (deep-one t b0 b1 b2 b3 l r u d)
+(define (deep-one s)
   (case scene-name
     ((title)
-      (update-title-scene b0)
+      (update-title-scene s)
       (draw-title-scene))
     ((main)
-      (update-main b0 l r u d)
+      (update-main s)
       (draw-main)))
   (game deep-one))
 (game deep-one)
