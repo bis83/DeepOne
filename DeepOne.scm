@@ -7,8 +7,6 @@
 
 (define pi (acos -1))
 
-;;; pictures
-
 (png 0   0   0 "data/frame.png")          ; 640x480
 (png 0   0 480 "data/field01.png")        ; 400x400
 (png 0   0 880 "data/time.png")           ; 400x20
@@ -24,8 +22,6 @@
 (png 1   0 720 "data/push_start.png")     ; 320x120
 (png 2   0   0 "data/gameover.png")       ; 640x480
 (png 2   0 480 "data/clear.png")          ; 640x480
-
-;;; plots
 
 (define (plot-p sx sy dx dy)
   (plot sx sy (* 4 (floor dx)) (* 4 (floor dy)) 0 65535/4 255 255 255 255))
@@ -206,12 +202,7 @@
 (define photon-type (make-vector photon-max 0))
 (define photon-active? (make-vector photon-max #f))
 
-(define (update-title-scene b0)
-  (when (= b0 1)
-    (start-main)
-    (set! scene-name 'main)))
-
-(define (start-main)
+(define (reset-status)
   (set! gameover? #f)
   (set! complete? #f)
   (set! score 0)
@@ -230,14 +221,19 @@
   (set! active-gate-count 0)
   (vector-fill! photon-active? #f))
 
+(define (update-title-scene b0)
+  (when (= b0 1)
+    (reset-status)
+    (set! scene-name 'main)))
+
 (define (update-main b0 l r u d)
   (cond
     ((< 0 wait)
       (set! wait (- wait 1)))
     ((or gameover? complete?)
-      (when (= b0 1) (set! scene-name 'title)))
+      (when (= b0 1)
+        (set! scene-name 'title)))
     (else
-      (update-bgm)
       (update-player b0 l r u d)
       (update-photons)
       (update-gates)
@@ -247,9 +243,6 @@
       (limit-score)
       (increase-timer)
       (increase-level))))
-
-(define (update-bgm)
-  (values))
 
 (define (reflect-cristal x y)
   (set! cristal-vel-x (- cristal-pos-x x))
@@ -550,7 +543,7 @@
 
 ;;; entrypoint
 
-(define (deep-one fc b0 b1 b2 b3 l r u d)
+(define (deep-one t b0 b1 b2 b3 l r u d)
   (case scene-name
     ((title)
       (update-title-scene b0)
