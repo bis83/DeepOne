@@ -24,7 +24,7 @@
 (png 2   0 480 "data/clear.png")          ; 640x480
 
 (define (plot-p sx sy dx dy)
-  (plot sx sy (* 4 (floor dx)) (* 4 (floor dy)) 0 65535/4 255 255 255 255))
+  (plot sx sy dx dy 0 4 255 255 255 255))
 (define (plot-4p sx sy dx dy w h)
   (plot-p (+ sx 0) (+ sy 0) (+ dx 0) (+ dy 0))
   (plot-p (+ sx 0) (+ sy h) (+ dx 0) (+ dy h))
@@ -32,7 +32,7 @@
   (plot-p (+ sx w) (+ sy 0) (+ dx w) (+ dy 0)))
 
 (define (plot-a sx sy dx dy r g b a)
-  (plot sx sy (* 4 (floor dx)) (* 4 (floor dy)) 0 65535/4 r g b a))
+  (plot sx sy dx dy 0 4 r g b a))
 (define (plot-4a sx sy dx dy w h r g b a)
   (plot-a (+ sx 0) (+ sy 0) (+ dx 0) (+ dy 0) r g b a)
   (plot-a (+ sx 0) (+ sy h) (+ dx 0) (+ dy h) r g b a)
@@ -40,7 +40,7 @@
   (plot-a (+ sx w) (+ sy 0) (+ dx w) (+ dy 0) r g b a))
 
 (define (plot-ra sx sy dx dy a)
-  (plot sx sy (* 4 (floor dx)) (* 4 (floor dy)) 0 65535/4 255 255 255 a))
+  (plot sx sy dx dy 0 4 255 255 255 a))
 (define (plot-4ra sx sy dx dy w h rot a)
   (define (rx x y) (- (* (cos rot) x) (* (sin rot) y)))
   (define (ry x y) (+ (* (sin rot) x) (* (cos rot) y)))
