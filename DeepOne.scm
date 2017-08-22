@@ -1,7 +1,7 @@
 ;;;; Copyright (c) 2017 bis83. Distributed under the BSD license. 
 
 (use hina)
-(screen 640 480 0.05 0.05 0.1)
+(screen 640 480 16 16 32)
 (game void)
 (game void)
 
