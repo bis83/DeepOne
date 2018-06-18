@@ -1,0 +1,5 @@
+((author "bis83")
+ (synopsis "")
+ (license "BSD")
+ (files "DeepOne.setup"
+        "DeepOne.scm"))
